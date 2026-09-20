@@ -1,0 +1,6 @@
+{
+  "name": "100 Nights as a Vampire",
+  "description": "A gothic survival RPG where a newly turned vampire must survive 100 nights through strategy, blood management, secrecy, and supernatural intrigue.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

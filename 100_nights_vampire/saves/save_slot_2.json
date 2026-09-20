@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "slot": 2,
+  "player_data": {
+    "health": 100,
+    "max_health": 100,
+    "hunger": 25,
+    "secrecy": 85,
+    "energy": 70,
+    "max_energy": 100,
+    "money": 777,
+    "night": 15,
+    "inventory": {
+      "rat_blood": 2,
+      "energy_tonic": 1
+    },
+    "abilities": {
+      "superhuman_speed": {
+        "ability_id": "superhuman_speed",
+        "level": 1
+      },
+      "hypnosis": {
+        "ability_id": "hypnosis",
+        "level": 0
+      },
+      "night_vision": {
+        "ability_id": "night_vision",
+        "level": 0
+      },
+      "shadow_teleportation": {
+        "ability_id": "shadow_teleportation",
+        "level": 0
+      },
+      "vampire_charm": {
+        "ability_id": "vampire_charm",
+        "level": 0
+      },
+      "regeneration": {
+        "ability_id": "regeneration",
+        "level": 0
+      },
+      "bat_transformation": {
+        "ability_id": "bat_transformation",
+        "level": 0
+      }
+    },
+    "characters": {
+      "mentor": {
+        "char_id": "mentor",
+        "trust": 60,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "rival": {
+        "char_id": "rival",
+        "trust": 35,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "hunter": {
+        "char_id": "hunter",
+        "trust": 15,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "queen": {
+        "char_id": "queen",
+        "trust": 40,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "mysterious_human": {
+        "char_id": "mysterious_human",
+        "trust": 45,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "werewolf": {
+        "char_id": "werewolf",
+        "trust": 25,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "witch": {
+        "char_id": "witch",
+        "trust": 50,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      },
+      "human_friend": {
+        "char_id": "human_friend",
+        "trust": 75,
+        "status": "Neutral",
+        "notes": [],
+        "history": []
+      }
+    },
+    "story_flags": {
+      "sire_revealed": false,
+      "blood_pact_signed": false,
+      "knows_enemy_identity": false,
+      "knows_blood_moon_secret": false,
+      "cross_allied": false,
+      "rival_defeated": false,
+      "humanity_saved": true,
+      "unlocked_locations": [
+        "mansion",
+        "downtown",
+        "graveyard",
+        "academy",
+        "nightclub"
+      ],
+      "feed_count": 0,
+      "innocents_killed": 0,
+      "milestones_completed": []
+    },
+    "last_log": "Awakened as an immortal. You have 100 nights until the Blood Moon."
+  }
+}
