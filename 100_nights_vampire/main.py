@@ -15,18 +15,17 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 def verify_dependencies():
-    """Verify that Pygame is installed; if not, print user-friendly instructions."""
+    """Check if Pygame is installed; if not, offer seamless fallback to CLI edition."""
     try:
         import pygame
         return True
     except ImportError:
         print("\n" + "=" * 65)
-        print("  [ERROR] Pygame is not installed!")
+        print("  [NOTICE] Pygame is not installed in this environment.")
         print("=" * 65)
-        print("To run '100 Nights as a Vampire', please install Pygame via pip:\n")
+        print("To run the Pygame desktop graphical window, install Pygame via:")
         print("    pip install pygame\n")
-        print("Or if using python3 explicitly:\n")
-        print("    python3 -m pip install pygame\n")
+        print("Starting the full, zero-dependency TERMINAL / CLI EDITION now...\n")
         print("=" * 65 + "\n")
         return False
 
@@ -37,7 +36,13 @@ def main():
     print("=" * 65)
     
     if not verify_dependencies():
-        sys.exit(1)
+        try:
+            from cli_game import main as cli_main
+            cli_main()
+            return
+        except Exception as e:
+            print(f"[Error starting CLI edition]: {e}")
+            sys.exit(1)
 
     try:
         from game import Game

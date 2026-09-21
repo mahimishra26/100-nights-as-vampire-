@@ -122,3 +122,18 @@ LOCATIONS_DATA: Dict[str, Location] = {
         loot_types=["enchanted_items", "forged_papers", "elixirs"]
     )
 }
+
+LOCATION_REGISTRY = LOCATIONS_DATA
+
+def get_unlocked_locations(night: int) -> List[str]:
+    """Returns list of unlocked location keys based on night progress."""
+    unlocked = ["mansion", "downtown", "graveyard", "academy", "nightclub"]
+    if night >= 5:
+        unlocked.append("forest")
+    if night >= 10:
+        unlocked.append("church")
+    if night >= 15:
+        unlocked.append("hospital")
+    if night >= 20:
+        unlocked.append("market")
+    return unlocked

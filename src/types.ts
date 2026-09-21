@@ -109,3 +109,43 @@ export interface EndingResult {
   badge: string;
   description: string;
 }
+
+export type VampirePersonality = 'Charming' | 'Mysterious' | 'Ruthless' | 'Compassionate';
+export type VampireOutfit = 'Victorian Noble' | 'Gothic Scholar' | 'Midnight Rogue' | 'Blood Aristocrat';
+
+export interface VampireProfile {
+  name: string;
+  genderStyle: 'Masculine' | 'Feminine' | 'Androgynous';
+  hairStyle: string;
+  hairColor: string;
+  eyeColor: string;
+  outfit: VampireOutfit;
+  personality: VampirePersonality;
+}
+
+export interface StoryJournal {
+  completedQuests: string[];
+  discoveries: string[];
+  majorDecisions: string[];
+  unlockedLore: string[];
+  currentObjective: string;
+}
+
+export interface GameSettings {
+  musicVolume: number;
+  sfxVolume: number;
+  fullscreen: boolean;
+  difficulty: 'Story' | 'Normal' | 'Gothic Nightmare';
+}
+
+export type AppScreen =
+  | 'menu'
+  | 'character_creation'
+  | 'dashboard'
+  | 'map'
+  | 'hunting'
+  | 'abilities'
+  | 'relationships'
+  | 'blood_moon'
+  | 'settings'
+  | 'ending';

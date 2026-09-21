@@ -24,6 +24,15 @@ class Player:
         self.money: int = DEFAULT_MONEY
         self.night: int = 1
         
+        # Character Customization Profile
+        self.name: str = "Lucien Ravenscroft"
+        self.gender_style: str = "Masculine"
+        self.hair_style: str = "Victorian Waves"
+        self.hair_color: str = "Raven Black"
+        self.eye_color: str = "Crimson Blood"
+        self.outfit: str = "Victorian Noble"
+        self.personality: str = "Charming"  # Charming, Mysterious, Ruthless, Compassionate
+
         # Sub-systems
         self.inventory: Inventory = Inventory()
         self.abilities: Dict[str, Ability] = create_default_abilities()
@@ -183,6 +192,13 @@ class Player:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "name": self.name,
+            "gender_style": self.gender_style,
+            "hair_style": self.hair_style,
+            "hair_color": self.hair_color,
+            "eye_color": self.eye_color,
+            "outfit": self.outfit,
+            "personality": self.personality,
             "health": self.health,
             "max_health": self.max_health,
             "hunger": self.hunger,
@@ -199,6 +215,13 @@ class Player:
         }
 
     def load_from_dict(self, data: Dict[str, Any]):
+        self.name = data.get("name", "Lucien Ravenscroft")
+        self.gender_style = data.get("gender_style", "Masculine")
+        self.hair_style = data.get("hair_style", "Victorian Waves")
+        self.hair_color = data.get("hair_color", "Raven Black")
+        self.eye_color = data.get("eye_color", "Crimson Blood")
+        self.outfit = data.get("outfit", "Victorian Noble")
+        self.personality = data.get("personality", "Charming")
         self.health = data.get("health", DEFAULT_HEALTH)
         self.max_health = data.get("max_health", 100)
         self.hunger = data.get("hunger", DEFAULT_HUNGER)

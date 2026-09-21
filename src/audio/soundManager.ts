@@ -149,6 +149,80 @@ class SoundManager {
     osc.stop(now + 0.85);
   }
 
+  isSoundEnabled(): boolean {
+    return !this.muted;
+  }
+
+  setSoundEnabled(enabled: boolean) {
+    this.muted = !enabled;
+  }
+
+  playClick() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.05);
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.07);
+  }
+
+  playClaw() {
+    this.playSlash();
+  }
+
+  playCoin() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(987, now);
+    osc.frequency.setValueAtTime(1318, now + 0.08);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.28);
+  }
+
+  playFootstep() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.14);
+  }
+
+  playDice() {
+    this.playClick();
+  }
+
+  playVictory() {
+    this.playOrganChord();
+  }
+
   // Deep cathedral bell toll
   playBellToll() {
     if (this.muted) return;
@@ -171,6 +245,11 @@ class SoundManager {
     osc.start(now);
     osc.stop(now + 3.1);
   }
+
+  playGameOver() {
+    this.playBellToll();
+  }
 }
 
 export const sounds = new SoundManager();
+

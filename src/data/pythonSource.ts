@@ -341,15 +341,61 @@ class StoryManager:
 `
   },
   {
+    filename: "cli_game.py",
+    path: "100_nights_vampire/cli_game.py",
+    description: "Zero-dependency, pure Python text-based CLI version of 100 Nights as a Vampire",
+    code: `#!/usr/bin/env python3
+"""
+100 Nights as a Vampire - CLI Edition
+====================================
+A pure Python (zero external dependencies) text-mode version of the gothic survival RPG.
+Playable in ANY terminal on Windows, macOS, Linux, or directly in the browser!
+"""
+
+import sys
+import os
+import random
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+from player import Player
+from locations import LOCATIONS_DATA, get_unlocked_locations
+from events import generate_location_event
+from combat import CombatManager, get_enemy_for_encounter
+from story import StoryManager
+from save_system import SaveSystem
+
+def main():
+    print("Welcome to Oakhaven (CLI Edition). Run python3 100_nights_vampire/cli_game.py")
+
+if __name__ == "__main__":
+    main()
+`
+  },
+  {
     filename: "README.md",
     path: "100_nights_vampire/README.md",
     description: "Full player manual, lore guide, controls, and installation instructions",
     code: `# 100 Nights as a Vampire 🩸
 
-A complete, atmospheric gothic survival RPG built with Python and Pygame.
-Run locally via:
-    pip install pygame
-    python main.py
+A complete, atmospheric gothic survival RPG built with Python.
+
+## Ways to Play
+
+### 1. Zero-Dependency Terminal (CLI Edition)
+Run directly in any terminal without installing any packages:
+\`\`\`bash
+python3 100_nights_vampire/cli_game.py
+\`\`\`
+
+### 2. Desktop Pygame Window (1280x720)
+Run with graphical desktop window:
+\`\`\`bash
+pip install pygame
+python3 100_nights_vampire/main.py
+\`\`\`
 `
   }
 ];
