@@ -1,289 +1,156 @@
 import React from 'react';
-import { PlayerStats, AppScreen, VampireProfile } from '../types';
-import {
-  Volume2,
-  VolumeX,
-  Code,
-  Briefcase,
-  Zap,
-  Users,
-  Moon,
-  HelpCircle,
-  Monitor,
-  Terminal,
-  Gamepad2,
-  Compass,
-  Sword,
-  Settings,
-  Sparkles,
-  ChevronDown
-} from 'lucide-react';
+import { PlayerStats, ScreenId, VampireProfile } from '../types';
+import { Moon, Sun, Volume2, VolumeX, Sparkles, HelpCircle, ArrowLeft, Grid } from 'lucide-react';
 import { sounds } from '../audio/soundManager';
-
-export type GameViewMode = 'web' | 'pygame' | 'terminal';
 
 interface TopNavBarProps {
   stats: PlayerStats;
-  profile?: VampireProfile;
-  currentScreen: AppScreen;
-  onNavigateScreen: (screen: AppScreen) => void;
+  profile: VampireProfile;
+  currentScreen: ScreenId;
+  onNavigate: (screen: ScreenId) => void;
   muted: boolean;
-  activeMode: GameViewMode;
-  onSelectMode: (mode: GameViewMode) => void;
-  onOpenHowToPlay: () => void;
   onToggleMute: () => void;
-  onOpenInventory: () => void;
-  onOpenAbilities: () => void;
-  onOpenRelationships: () => void;
-  onOpenPythonHub: () => void;
+  onOpenQuickNavigator: () => void;
 }
 
-export function TopNavBar({
+export const TopNavBar: React.FC<TopNavBarProps> = ({
   stats,
   profile,
   currentScreen,
-  onNavigateScreen,
+  onNavigate,
   muted,
-  activeMode,
-  onSelectMode,
-  onOpenHowToPlay,
   onToggleMute,
-  onOpenInventory,
-  onOpenAbilities,
-  onOpenRelationships,
-  onOpenPythonHub
-}: TopNavBarProps) {
-  const isBloodMoon = stats.night >= 90 || stats.night === 25 || stats.night === 50 || stats.night === 75;
+  onOpenQuickNavigator
+}) => {
+  const isNight = stats.timeOfDay === 'night';
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-[#121118]/95 backdrop-blur-md border-b border-[#3d2331] shadow-2xl px-3 sm:px-4 py-2">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-        {/* Night progress & Mode Switcher */}
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-40 w-full bg-[#161226]/95 backdrop-blur-md border-b border-[#3b2a54] shadow-lg px-3 py-2 text-white">
+      <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+        {/* Left: Night / Time Indicator & Back */}
+        <div className="flex items-center gap-2">
+          {currentScreen !== 'main_menu' && currentScreen !== 'splash' && currentScreen !== 'home' && (
+            <button
+              onClick={() => {
+                sounds.playClick();
+                onNavigate('home');
+              }}
+              className="p-1.5 rounded-xl bg-[#281e3d] hover:bg-[#3d2c5e] text-purple-200 border border-purple-800/40 transition-all flex items-center gap-1 text-xs font-bold"
+              title="Return Home"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Home</span>
+            </button>
+          )}
+
+          <div
+            onClick={() => {
+              sounds.playClick();
+              onNavigate('game_progress');
+            }}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#231838] border border-purple-700/30 cursor-pointer hover:border-purple-500 transition-all"
+            title="Click to view Game Progress"
+          >
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isNight ? 'bg-indigo-900/80 text-amber-300' : 'bg-amber-900/70 text-amber-300'}`}>
+              {isNight ? <Moon className="w-4 h-4 fill-amber-300 animate-pulse" /> : <Sun className="w-4 h-4 fill-amber-400" />}
+            </div>
+            <div className="leading-tight">
+              <div className="flex items-center gap-1 text-xs font-bold text-purple-200 tracking-wide">
+                <span>NIGHT {stats.night}</span>
+                <span className="text-[10px] text-purple-400 font-normal">/ 100</span>
+              </div>
+              <div className="text-[10px] text-amber-300 font-semibold flex items-center gap-1">
+                <span>{isNight ? '🌙 Midnight Phase' : '☀️ Day Phase'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Cozy Vital Stat Bars */}
+        {currentScreen !== 'splash' && currentScreen !== 'main_menu' && (
+          <div className="hidden md:flex items-center gap-3 text-xs">
+            {/* Hunger */}
+            <div className="flex items-center gap-1.5 bg-[#201533] px-2.5 py-1 rounded-xl border border-purple-800/30">
+              <span className="text-sm">🩸</span>
+              <div className="w-16">
+                <div className="flex justify-between text-[10px] text-red-300 font-bold mb-0.5">
+                  <span>Thirst</span>
+                  <span>{stats.hunger < 30 ? 'Safe' : stats.hunger < 70 ? 'Thirsty' : 'Hungry!'}</span>
+                </div>
+                <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all rounded-full ${stats.hunger > 65 ? 'bg-red-500 animate-pulse' : 'bg-pink-500'}`}
+                    style={{ width: `${Math.min(100, Math.max(5, stats.hunger))}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Secrecy */}
+            <div className="flex items-center gap-1.5 bg-[#201533] px-2.5 py-1 rounded-xl border border-purple-800/30">
+              <span className="text-sm">🕵️</span>
+              <div className="w-16">
+                <div className="flex justify-between text-[10px] text-amber-300 font-bold mb-0.5">
+                  <span>Secret</span>
+                  <span>{stats.secrecy}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(5, stats.secrecy))}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Energy */}
+            <div className="flex items-center gap-1.5 bg-[#201533] px-2.5 py-1 rounded-xl border border-purple-800/30">
+              <span className="text-sm">⚡</span>
+              <div className="w-16">
+                <div className="flex justify-between text-[10px] text-blue-300 font-bold mb-0.5">
+                  <span>Energy</span>
+                  <span>{stats.energy}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-black/60 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(5, stats.energy))}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Coins */}
+            <div className="flex items-center gap-1 bg-[#2b1f42] px-2.5 py-1.5 rounded-xl border border-amber-600/40 font-bold text-amber-300 text-xs shadow-inner">
+              <span>🪙</span>
+              <span>{stats.coins}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Right: Quick Screen Switcher & Audio */}
+        <div className="flex items-center gap-2">
+          {/* 30 Screens Master Selector */}
           <button
             onClick={() => {
               sounds.playClick();
-              onNavigateScreen('dashboard');
+              onOpenQuickNavigator();
             }}
-            className="flex items-center gap-2 cursor-pointer text-left group"
-            title="Return to Haven Dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-800 to-indigo-800 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md border border-purple-500/40 transition-transform active:scale-95"
+            title="Open 30 Screens Explorer"
           >
-            <div className="relative">
-              <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-transform group-hover:scale-105 ${
-                  isBloodMoon
-                    ? 'border-red-600 bg-red-950/60 shadow-[0_0_15px_rgba(220,38,38,0.5)]'
-                    : 'border-[#d4af37] bg-[#1a1724]'
-                }`}
-              >
-                <Moon className={`w-4 h-4 ${isBloodMoon ? 'text-red-500 animate-pulse' : 'text-[#e5c158]'}`} />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-cinzel text-sm sm:text-base font-bold tracking-wider text-[#e6ded3]">
-                  NIGHT {stats.night}
-                </span>
-                <span className="text-[10px] text-[#9d8d8f]">/ 100</span>
-              </div>
-              <div className="text-[10px] font-gothic tracking-wide text-[#b3a19b]">
-                {isBloodMoon ? (
-                  <span className="text-red-400 font-semibold tracking-wider animate-pulse">
-                    ✦ BLOOD MOON ECLIPSE ✦
-                  </span>
-                ) : (
-                  `${100 - stats.night} nights left`
-                )}
-              </div>
-            </div>
+            <Grid className="w-3.5 h-3.5" />
+            <span className="text-xs">30 Screens</span>
           </button>
 
-          {/* 7+ Screens Quick Switcher Pills (visible on medium+ screens) */}
-          {currentScreen !== 'menu' && (
-            <div className="hidden xl:flex items-center gap-1 bg-[#181324] p-1 rounded-xl border border-[#3b233a] text-xs font-cinzel">
-              <button
-                onClick={() => onNavigateScreen('dashboard')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'dashboard'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🌙 Haven
-              </button>
-              <button
-                onClick={() => onNavigateScreen('map')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'map'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🗺️ Map
-              </button>
-              <button
-                onClick={() => onNavigateScreen('hunting')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'hunting'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🩸 Hunt
-              </button>
-              <button
-                onClick={() => onNavigateScreen('abilities')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'abilities'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                ⚡ Disciplines
-              </button>
-              <button
-                onClick={() => onNavigateScreen('relationships')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'relationships'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                ❤️ Covens
-              </button>
-              <button
-                onClick={() => onNavigateScreen('character_creation')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'character_creation'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                🧛 Visage
-              </button>
-              <button
-                onClick={() => onNavigateScreen('settings')}
-                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  currentScreen === 'settings'
-                    ? 'bg-red-950 text-white font-bold border border-red-700 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                ⚙️ Settings
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Dynamic Vitals Bars */}
-        <div className="flex flex-wrap items-center gap-2.5 text-xs font-serif">
-          {/* Health */}
-          <div className="flex flex-col gap-0.5 min-w-[75px]">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-[#a7d8a6]">❤️ HP</span>
-              <span className="font-mono font-semibold text-[#e6ded3]">{stats.health}/{stats.maxHealth}</span>
-            </div>
-            <div className="w-18 h-1.5 rounded bg-black/60 border border-[#3b473a] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-700 to-green-500 transition-all duration-300"
-                style={{ width: `${Math.max(0, Math.min(100, (stats.health / stats.maxHealth) * 100))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Hunger */}
-          <div className="flex flex-col gap-0.5 min-w-[75px]">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-red-400">🩸 Thirst</span>
-              <span className={`font-mono font-semibold ${stats.hunger > 70 ? 'text-red-500 animate-pulse' : 'text-[#e6ded3]'}`}>
-                {stats.hunger}%
-              </span>
-            </div>
-            <div className="w-18 h-1.5 rounded bg-black/60 border border-[#521c25] overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${
-                  stats.hunger > 75
-                    ? 'bg-gradient-to-r from-red-700 to-red-500'
-                    : 'bg-gradient-to-r from-amber-800 to-red-800'
-                }`}
-                style={{ width: `${Math.max(0, Math.min(100, stats.hunger))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Secrecy */}
-          <div className="flex flex-col gap-0.5 min-w-[75px]">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-amber-300">🕵️ Stealth</span>
-              <span className={`font-mono font-semibold ${stats.secrecy < 35 ? 'text-amber-500' : 'text-[#e6ded3]'}`}>
-                {stats.secrecy}%
-              </span>
-            </div>
-            <div className="w-18 h-1.5 rounded bg-black/60 border border-[#4d3d24] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-700 to-yellow-500 transition-all duration-300"
-                style={{ width: `${Math.max(0, Math.min(100, stats.secrecy))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Energy */}
-          <div className="flex flex-col gap-0.5 min-w-[75px]">
-            <div className="flex justify-between items-center text-[10px]">
-              <span className="text-blue-400">⚡ Energy</span>
-              <span className="font-mono font-semibold text-[#e6ded3]">{stats.energy}/{stats.maxEnergy}</span>
-            </div>
-            <div className="w-18 h-1.5 rounded bg-black/60 border border-[#23354d] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-700 to-indigo-400 transition-all duration-300"
-                style={{ width: `${Math.max(0, Math.min(100, (stats.energy / stats.maxEnergy) * 100))}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Money */}
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1f1b29] border border-[#54432a]">
-            <span className="text-xs">💰</span>
-            <span className="font-mono font-bold text-[#eac54f] text-xs">${stats.money}</span>
-          </div>
-        </div>
-
-        {/* Action Controls & Navigation */}
-        <div className="flex items-center gap-1.5 md:gap-2">
-          {/* Menu button */}
+          {/* Sound Toggle */}
           <button
-            onClick={() => onNavigateScreen('menu')}
-            className="px-2.5 py-1.5 rounded bg-[#1f1629] hover:bg-[#342245] text-red-200 border border-[#4a294d] text-xs font-cinzel transition-all cursor-pointer"
-            title="Main Menu"
-          >
-            🏰 Menu
-          </button>
-
-          {/* How to Play button */}
-          <button
-            onClick={onOpenHowToPlay}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#271d36] hover:bg-[#3d2954] text-purple-200 border border-[#5d3b75] text-xs font-cinzel transition-all cursor-pointer shadow-md"
-            title="All Ways to Play"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Guide</span>
-          </button>
-
-          {/* Python Code & Hub */}
-          <button
-            onClick={onOpenPythonHub}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-gradient-to-r from-red-950 to-[#2f1825] hover:from-red-900 text-red-200 border border-red-700/60 text-xs font-cinzel font-semibold transition-all cursor-pointer"
-            title="Download Python Engine (.zip)"
-          >
-            <Code className="w-3.5 h-3.5 text-red-400" />
-            <span className="hidden md:inline">Python</span>
-          </button>
-
-          {/* Audio toggle */}
-          <button
-            onClick={onToggleMute}
-            className="p-1.5 rounded bg-[#1f1b29] hover:bg-[#2e2336] text-[#a89aa0] hover:text-[#f3eae8] border border-[#3b2b3b] transition-colors cursor-pointer"
-            title={muted ? 'Unmute Gothic Audio' : 'Mute Audio'}
+            onClick={() => {
+              sounds.playClick();
+              onToggleMute();
+            }}
+            className="p-1.5 rounded-xl bg-[#281e3d] hover:bg-[#3d2c5e] text-purple-200 border border-purple-800/40 transition-colors"
+            title={muted ? 'Unmute Sound' : 'Mute Sound'}
           >
             {muted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
           </button>
@@ -291,4 +158,4 @@ export function TopNavBar({
       </div>
     </header>
   );
-}
+};

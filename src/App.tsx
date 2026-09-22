@@ -1,663 +1,181 @@
 import { useState, useEffect } from 'react';
 import {
+  ScreenId,
   PlayerStats,
-  LocationInfo,
-  NPCCharacter,
-  Ability,
-  InventoryItem,
-  GameEvent,
-  EventChoice,
-  Enemy,
-  EndingResult,
   VampireProfile,
-  StoryJournal,
-  AppScreen
+  CharacterFriendship,
+  VampirePower,
+  MysteryClue,
+  Achievement,
+  MemoryMoment,
+  MiniGameType
 } from './types';
 import {
-  INITIAL_LOCATIONS,
-  INITIAL_CHARACTERS,
-  INITIAL_ABILITIES,
-  INITIAL_ITEMS,
-  MILESTONE_EVENTS
+  INITIAL_FRIENDS,
+  INITIAL_POWERS,
+  INITIAL_CLUES,
+  INITIAL_ACHIEVEMENTS,
+  INITIAL_MEMORIES
 } from './data/gameData';
-import { LOCATION_EVENTS_POOL } from './data/locationEvents';
 import { GothicCanvas } from './components/GothicCanvas';
-import { TopNavBar, GameViewMode } from './components/TopNavBar';
-import { EventModal } from './components/EventModal';
-import { CombatModal } from './components/CombatModal';
-import { PythonHubModal } from './components/PythonHubModal';
-import { EndingModal } from './components/EndingModal';
-import { PygameWindowView } from './components/PygameWindowView';
-import { PythonTerminalModal } from './components/PythonTerminalModal';
-import { HowToPlayModal } from './components/HowToPlayModal';
-
-// Dedicated 7+ Screens
-import { MainMenuScreen } from './components/screens/MainMenuScreen';
-import { CharacterCreationScreen } from './components/screens/CharacterCreationScreen';
-import { DashboardScreen } from './components/screens/DashboardScreen';
-import { CityMapScreen } from './components/screens/CityMapScreen';
-import { HuntCombatScreen } from './components/screens/HuntCombatScreen';
-import { AbilitiesInventoryScreen } from './components/screens/AbilitiesInventoryScreen';
-import { RelationshipsStoryScreen } from './components/screens/RelationshipsStoryScreen';
-import { SettingsScreen } from './components/screens/SettingsScreen';
-import { BloodMoonCinematicScreen } from './components/screens/BloodMoonCinematicScreen';
-
+import { TopNavBar } from './components/TopNavBar';
+import { AllScreensModal } from './components/AllScreensModal';
+import { SplashAndMenuScreens } from './components/SplashAndMenuScreens';
+import { CharacterScreens } from './components/CharacterScreens';
+import { TutorialScreen } from './components/TutorialScreen';
+import { HomeScreen } from './components/HomeScreen';
+import { DaytimeExplorationScreens } from './components/DaytimeScreens';
+import { FriendshipAndPowersScreens } from './components/FriendshipAndPowersScreens';
+import { NightSurvivalScreens } from './components/NightSurvivalScreens';
+import { MiniGamesScreen } from './components/MiniGamesScreen';
+import { RewardsAndEndingsScreens } from './components/RewardsAndEndingsScreens';
 import { sounds } from './audio/soundManager';
 
 const DEFAULT_PROFILE: VampireProfile = {
-  name: 'Lucien Ravenscroft',
-  genderStyle: 'Masculine',
-  hairStyle: 'Victorian Waves',
+  name: 'Rowan',
+  hair: 'Short Waves',
   hairColor: 'Raven Black',
-  eyeColor: 'Crimson Blood',
-  outfit: 'Victorian Noble',
-  personality: 'Charming'
+  skinTone: 'Fair Ivory',
+  outfit: 'School Uniform & Cloak',
+  petBatName: 'Pippin'
 };
 
-const DEFAULT_JOURNAL: StoryJournal = {
-  currentObjective:
-    'Survive the 100 nights in Oakhaven, satiate your thirst without exposing your haven to detective Cross, and uncover your Sire.',
-  completedQuests: ['Awakened in Oakhaven Sanctum'],
-  discoveries: [
-    'The Blood Moon eclipse converges once a century.',
-    'Lord Valerius withholds your true sire’s identity.',
-    'Detective Alexander Cross commands the Silver Dawn.'
-  ],
-  majorDecisions: ['Preserved the initial masquerade'],
-  unlockedLore: ['Ancient Vampire Codex: Volume I']
+const DEFAULT_STATS: PlayerStats = {
+  hunger: 15,
+  secrecy: 90,
+  energy: 85,
+  coins: 45,
+  night: 1,
+  timeOfDay: 'day'
 };
 
-export function App() {
-  // Screen & View State
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
-  const [viewMode, setViewMode] = useState<GameViewMode>('web');
-  const [showHowToPlay, setShowHowToPlay] = useState(false);
-  const [showTerminalModal, setShowTerminalModal] = useState(false);
-  const [showPythonHub, setShowPythonHub] = useState(false);
+export default function App() {
+  const [currentScreen, setCurrentScreen] = useState<ScreenId>('main_menu');
+  const [showScreenModal, setShowScreenModal] = useState(false);
+  const [muted, setMuted] = useState(false);
 
-  // Player Profile & Stats
+  // Core Game State
   const [profile, setProfile] = useState<VampireProfile>(() => {
-    const saved = localStorage.getItem('vampire_100_profile');
+    const saved = localStorage.getItem('vampire_cozy_profile');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
+      try { return JSON.parse(saved); } catch (e) {}
     }
     return DEFAULT_PROFILE;
   });
 
   const [stats, setStats] = useState<PlayerStats>(() => {
-    const saved = localStorage.getItem('vampire_100_stats');
+    const saved = localStorage.getItem('vampire_cozy_stats');
     if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
+      try { return JSON.parse(saved); } catch (e) {}
     }
-    return {
-      health: 100,
-      maxHealth: 100,
-      hunger: 25,
-      secrecy: 85,
-      energy: 70,
-      maxEnergy: 100,
-      money: 120,
-      night: 1
-    };
+    return DEFAULT_STATS;
   });
 
-  const [journal, setJournal] = useState<StoryJournal>(() => {
-    const saved = localStorage.getItem('vampire_100_journal');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return DEFAULT_JOURNAL;
-  });
+  const [friends, setFriends] = useState<Record<string, CharacterFriendship>>(INITIAL_FRIENDS);
+  const [powers, setPowers] = useState<VampirePower[]>(INITIAL_POWERS);
+  const [clues, setClues] = useState<MysteryClue[]>(INITIAL_CLUES);
+  const [achievements, setAchievements] = useState<Achievement[]>(INITIAL_ACHIEVEMENTS);
+  const [memories, setMemories] = useState<MemoryMoment[]>(INITIAL_MEMORIES);
 
-  const [unlockedLocations, setUnlockedLocations] = useState<string[]>([
-    'mansion',
-    'downtown',
-    'graveyard',
-    'academy',
-    'nightclub'
-  ]);
-  const [characters, setCharacters] = useState<Record<string, NPCCharacter>>(INITIAL_CHARACTERS);
-  const [abilities, setAbilities] = useState<Record<string, Ability>>(INITIAL_ABILITIES);
-  const [items, setItems] = useState<Record<string, InventoryItem>>(INITIAL_ITEMS);
-
-  // Active Modals / Combat
-  const [activeEvent, setActiveEvent] = useState<GameEvent | null>(null);
-  const [activeCombatEnemy, setActiveCombatEnemy] = useState<Enemy | null>(null);
-  const [activeEnding, setActiveEnding] = useState<EndingResult | null>(null);
-
-  // Logs & Notifications
-  const [muted, setMuted] = useState(false);
-  const [activityLogs, setActivityLogs] = useState<string[]>([
-    'Awakened as an immortal fledgling in Oakhaven.',
-    '100 nights of survival await in the gaslit shadows.'
-  ]);
-  const [dawnReport, setDawnReport] = useState<string | null>(null);
+  const [activeFriendId, setActiveFriendId] = useState<string>('maya');
+  const [mysteryBoxClaimedNight, setMysteryBoxClaimedNight] = useState<number>(0);
 
   // Persistence
   useEffect(() => {
-    localStorage.setItem('vampire_100_stats', JSON.stringify(stats));
+    localStorage.setItem('vampire_cozy_stats', JSON.stringify(stats));
   }, [stats]);
 
   useEffect(() => {
-    localStorage.setItem('vampire_100_profile', JSON.stringify(profile));
+    localStorage.setItem('vampire_cozy_profile', JSON.stringify(profile));
   }, [profile]);
 
-  useEffect(() => {
-    localStorage.setItem('vampire_100_journal', JSON.stringify(journal));
-  }, [journal]);
-
-  // Check Game Over Conditions
-  useEffect(() => {
-    if (activeEnding) return;
-
-    if (stats.health <= 0) {
-      sounds.playBellToll();
-      setActiveEnding({
-        id: 'defeated',
-        title: 'Reduced to Ash',
-        badge: 'MORTAL DISSOLUTION',
-        description:
-          'Your undead heart ceased beating. The cold silver, blessed blade, or grievous wounds were too grave to endure. Your physical form dissolves into gray ash upon the Victorian cobblestones.'
-      });
-      setCurrentScreen('ending');
-    } else if (stats.secrecy <= 0) {
-      sounds.playBellToll();
-      setActiveEnding({
-        id: 'defeated',
-        title: 'Exposed & Executed',
-        badge: 'INQUISITION SUNRISE',
-        description:
-          'The mortal authorities and Detective Cross discovered your haven before twilight. Bound in chains of sanctified steel atop the cathedral bell tower, the rising sun was your executioner.'
-      });
-      setCurrentScreen('ending');
-    } else if (stats.hunger >= 100) {
-      sounds.playBellToll();
-      setActiveEnding({
-        id: 'defeated',
-        title: 'The Beast Takes Over',
-        badge: 'FERAL DEVOLUTION',
-        description:
-          'The crimson starvation shattered the remnants of your mortal mind. In a mindless frenzy, you slaughtered indiscriminately until ancient elders and werewolf packs united to put you down like a rabid beast.'
-      });
-      setCurrentScreen('ending');
-    } else if (stats.night >= 100 && currentScreen !== 'ending' && currentScreen !== 'blood_moon') {
-      // Reached Night 100!
-      setCurrentScreen('blood_moon');
-    }
-  }, [stats.health, stats.secrecy, stats.hunger, stats.night, activeEnding]);
-
-  // Advance Night Logic
-  const advanceNight = (logMsg: string) => {
-    const nextNight = stats.night + 1;
-    const nextHunger = Math.min(100, stats.hunger + 15);
-    const nextEnergy = Math.min(stats.maxEnergy, stats.energy + 35);
-    let hpDmg = 0;
-    const consequences: string[] = [logMsg];
-
-    if (nextHunger >= 90) {
-      hpDmg = 20;
-      consequences.push('STARVATION FRENZY: The burning thirst tore at your undead flesh (-20 HP).');
-      sounds.playHeartbeat();
-    } else if (nextHunger >= 75) {
-      hpDmg = 10;
-      consequences.push('Severe Thirst: Hunger weakened your focus (-10 HP).');
-    }
-
-    // Unlock locations progressively
-    const newUnlocked = [...unlockedLocations];
-    if (nextNight >= 5 && !newUnlocked.includes('forest')) newUnlocked.push('forest');
-    if (nextNight >= 10 && !newUnlocked.includes('church')) newUnlocked.push('church');
-    if (nextNight >= 15 && !newUnlocked.includes('hospital')) newUnlocked.push('hospital');
-    if (nextNight >= 20 && !newUnlocked.includes('market')) newUnlocked.push('market');
-    setUnlockedLocations(newUnlocked);
-
-    setStats((prev) => ({
-      ...prev,
-      night: nextNight,
-      hunger: nextHunger,
-      energy: nextEnergy,
-      health: Math.max(0, prev.health - hpDmg)
-    }));
-
-    setDawnReport(`Night ${stats.night} concluded as dawn approached. Night ${nextNight} begins.`);
-    setActivityLogs((prev) => [...consequences, ...prev.slice(0, 8)]);
-
-    // Check for major Blood Moon milestones (25, 50, 75, 100)
-    if ([25, 50, 75, 100].includes(nextNight)) {
-      sounds.playOrganChord();
-      setCurrentScreen('blood_moon');
-    }
-  };
-
-  // Quick Feeding
-  const handleQuickFeed = (method: 'rats' | 'bag' | 'stealth_mortal') => {
-    if (method === 'rats') {
-      sounds.playBite();
+  // Advance Night / Day phase
+  const handleSleepOrNextPhase = () => {
+    sounds.playDoor();
+    if (stats.timeOfDay === 'day') {
       setStats((prev) => ({
         ...prev,
-        hunger: Math.max(0, prev.hunger - 20),
-        energy: Math.min(prev.maxEnergy, prev.energy + 10)
+        timeOfDay: 'night',
+        hunger: Math.min(100, prev.hunger + 15),
+        energy: Math.min(100, prev.energy + 20)
       }));
-      setActivityLogs((prev) => ['Hunted vermin in the damp alleys (-20 Thirst, +10⚡).', ...prev.slice(0, 8)]);
-    } else if (method === 'bag') {
-      if (items['preserved_blood'] && items['preserved_blood'].quantity > 0) {
-        sounds.playBite();
-        setItems((prev) => ({
-          ...prev,
-          preserved_blood: {
-            ...prev['preserved_blood'],
-            quantity: prev['preserved_blood'].quantity - 1
-          }
-        }));
-        setStats((prev) => ({
-          ...prev,
-          hunger: Math.max(0, prev.hunger - 45),
-          health: Math.min(prev.maxHealth, prev.health + 15),
-          energy: Math.min(prev.maxEnergy, prev.energy + 25)
-        }));
-        setActivityLogs((prev) => [
-          'Consumed a preserved blood pack (-45 Thirst, +15 HP, +25⚡).',
-          ...prev.slice(0, 8)
-        ]);
-      } else if (stats.money >= 30) {
-        sounds.playBite();
-        setStats((prev) => ({
-          ...prev,
-          money: prev.money - 30,
-          hunger: Math.max(0, prev.hunger - 40),
-          health: Math.min(prev.maxHealth, prev.health + 10)
-        }));
-        setActivityLogs((prev) => ['Purchased an emergency blood vial from black market (-$30, -40 Thirst).', ...prev.slice(0, 8)]);
-      } else {
-        alert('You have no blood packs and lack the $30 gold to purchase one!');
-      }
-    } else if (method === 'stealth_mortal') {
-      sounds.playMagic();
-      const charmBonus = abilities['vampire_charm'] ? abilities['vampire_charm'].level * 4 : 0;
-      const secrecyLoss = Math.max(3, 10 - charmBonus);
-      setStats((prev) => ({
-        ...prev,
-        hunger: Math.max(0, prev.hunger - 50),
-        energy: Math.min(prev.maxEnergy, prev.energy + 30),
-        secrecy: Math.max(0, prev.secrecy - secrecyLoss)
-      }));
-      setActivityLogs((prev) => [
-        `Mesmerized an alley pedestrian (-50 Thirst, +30⚡, -${secrecyLoss}% Secrecy).`,
-        ...prev.slice(0, 8)
-      ]);
-    }
-  };
-
-  // Location Selection & Event Handling
-  const handleSelectLocation = (locId: string) => {
-    sounds.playOrganChord();
-    const loc = INITIAL_LOCATIONS[locId];
-
-    // Check ambush
-    const isAmbush = (stats.secrecy <= 35 && Math.random() < 0.45) || (Math.random() < 0.25 && loc.dangerLevel >= 3);
-    if (isAmbush) {
-      const enemy: Enemy = {
-        id: `${locId}_encounter`,
-        name: loc.dangerLevel >= 4 ? 'Silver Dawn Inquisitor' : 'Alleyway Shadow Stalker',
-        health: 50 + loc.dangerLevel * 12,
-        maxHealth: 50 + loc.dangerLevel * 12,
-        attackPower: 10 + loc.dangerLevel * 3,
-        defense: 4 + loc.dangerLevel * 2,
-        rewardMoney: 30 + loc.dangerLevel * 15,
-        rewardBlood: 30,
-        description: `Ambushed you while prowling through ${loc.name}!`,
-        specialAbility: 'Vicious Lunge'
-      };
-      setActiveCombatEnemy(enemy);
-      return;
-    }
-
-    // Trigger narrative location event
-    const pool = LOCATION_EVENTS_POOL[locId] || LOCATION_EVENTS_POOL['downtown'];
-    const selectedEvent = pool[Math.floor(Math.random() * pool.length)];
-    setActiveEvent(selectedEvent);
-  };
-
-  // Event Choices Handling
-  const handleEventChoice = (choice: EventChoice) => {
-    const c = choice.consequences;
-    sounds.playClick();
-
-    let newHealth = stats.health;
-    if (c.heal) newHealth = Math.min(stats.maxHealth, newHealth + c.heal);
-    if (c.takeDamage) {
-      newHealth = Math.max(0, newHealth - c.takeDamage);
-      sounds.playClaw();
-    }
-
-    let newHunger = stats.hunger;
-    if (c.hunger) newHunger = Math.max(0, Math.min(100, newHunger + c.hunger));
-
-    let newSecrecy = stats.secrecy;
-    if (c.secrecy) newSecrecy = Math.max(0, Math.min(100, newSecrecy + c.secrecy));
-
-    let newEnergy = stats.energy;
-    if (c.energy) newEnergy = Math.max(0, Math.min(stats.maxEnergy, newEnergy + c.energy));
-    if (choice.energyCost) newEnergy = Math.max(0, newEnergy - choice.energyCost);
-
-    let newMoney = stats.money;
-    if (c.money) newMoney = Math.max(0, newMoney + c.money);
-
-    // Apply Trust Change
-    if (c.trustChange) {
-      const { charId, delta } = c.trustChange;
-      setCharacters((prev) => {
-        const char = prev[charId];
-        if (!char) return prev;
-        const nextTrust = Math.max(0, Math.min(100, char.trust + delta));
-        let nextStatus = char.status;
-        if (nextTrust >= 80) nextStatus = 'Devoted';
-        else if (nextTrust >= 60) nextStatus = 'Allied';
-        else if (nextTrust >= 40) nextStatus = 'Friendly';
-        else if (nextTrust >= 20) nextStatus = 'Neutral';
-        else nextStatus = 'Hostile';
-        return { ...prev, [charId]: { ...char, trust: nextTrust, status: nextStatus } };
-      });
-    }
-
-    // Add Quest Discoveries to Journal
-    if (c.log) {
-      setJournal((prev) => ({
-        ...prev,
-        discoveries: [c.log, ...prev.discoveries.slice(0, 8)]
-      }));
-    }
-
-    setStats({
-      ...stats,
-      health: newHealth,
-      hunger: newHunger,
-      secrecy: newSecrecy,
-      energy: newEnergy,
-      money: newMoney
-    });
-
-    setActivityLogs((prev) => [c.log, ...prev.slice(0, 8)]);
-    setActiveEvent(null);
-
-    // Combat trigger check
-    if (c.combat) {
-      const enemy: Enemy = {
-        id: 'consequence_combat',
-        name: c.combat,
-        health: 75,
-        maxHealth: 75,
-        attackPower: 16,
-        defense: 6,
-        rewardMoney: 60,
-        rewardBlood: 35,
-        description: `Encountered as a result of your actions.`,
-        specialAbility: 'Blood Frenzy'
-      };
-      setActiveCombatEnemy(enemy);
-    }
-
-    // Ending trigger check
-    if (c.triggerEnding) {
-      const endings: Record<string, EndingResult> = {
-        ruler: {
-          id: 'monarch',
-          title: 'Vampire Monarch',
-          badge: 'SOVEREIGN OF MIDNIGHT',
-          description: 'You dethroned the elders and seized control of the Crimson Court. All Oakhaven bows to your immortal supremacy.'
-        },
-        redemption: {
-          id: 'redemption',
-          title: 'Mortal Redemption',
-          badge: 'HUMANITY RESTORED',
-          description: 'Through ancient alchemy and mortal devotion, you shattered the vampire curse. The 101st dawn warms your skin as a human once more.'
-        },
-        eternal: {
-          id: 'eternal',
-          title: 'The Wandering Phantom',
-          badge: 'ETERNAL PHANTOM',
-          description: 'You survived 100 nights in stealth, dissolving into the midnight mists as an untouchable legend across centuries.'
-        }
-      };
-      setActiveEnding(endings[c.triggerEnding] || endings.eternal);
-      setCurrentScreen('ending');
-    }
-  };
-
-  // Upgrading Abilities
-  const handleUpgradeAbility = (abilityId: string) => {
-    const ability = abilities[abilityId];
-    if (!ability) return;
-    if (stats.money < ability.upgradeCost || ability.level >= ability.maxLevel) return;
-
-    sounds.playMagic();
-    setStats((prev) => ({ ...prev, money: prev.money - ability.upgradeCost }));
-    setAbilities((prev) => ({
-      ...prev,
-      [abilityId]: {
-        ...ability,
-        level: ability.level + 1,
-        upgradeCost: Math.floor(ability.upgradeCost * 1.5)
-      }
-    }));
-    setActivityLogs((prev) => [
-      `Upgraded discipline: ${ability.name} to Rank ${ability.level + 1}!`,
-      ...prev.slice(0, 8)
-    ]);
-  };
-
-  // Using Items
-  const handleUseItem = (itemId: string) => {
-    const item = items[itemId];
-    if (!item || item.quantity <= 0) return;
-
-    sounds.playBite();
-    let newHealth = stats.health;
-    let newHunger = stats.hunger;
-    let newEnergy = stats.energy;
-    let newSecrecy = stats.secrecy;
-    let logMsg = `Used ${item.name}.`;
-
-    if (itemId === 'rat_blood') {
-      newHunger = Math.max(0, newHunger - 15);
-      logMsg = 'Consumed vial of animal blood (-15 Thirst).';
-    } else if (itemId === 'preserved_blood') {
-      newHunger = Math.max(0, newHunger - 45);
-      newHealth = Math.min(stats.maxHealth, newHealth + 20);
-      newEnergy = Math.min(stats.maxEnergy, newEnergy + 25);
-      logMsg = 'Consumed hospital blood pouch (-45 Thirst, +20 HP, +25⚡).';
-    } else if (itemId === 'ancient_elixir') {
-      newHealth = stats.maxHealth;
-      newEnergy = stats.maxEnergy;
-      newHunger = 0;
-      logMsg = 'Drank the Ancient Crimson Elixir! Completely restored HP, Energy, and quenched all thirst!';
-    } else if (itemId === 'holy_water') {
-      newHealth = Math.max(1, newHealth - 15);
-      newSecrecy = Math.min(100, newSecrecy + 25);
-      logMsg = 'Used Consecrated Holy Water to cleanse haven runes (-15 HP, +25% Secrecy).';
-    } else if (itemId === 'forged_pass') {
-      newSecrecy = Math.min(100, newSecrecy + 30);
-      logMsg = 'Presented forged diplomatic papers (+30% Secrecy).';
-    }
-
-    setItems((prev) => ({
-      ...prev,
-      [itemId]: { ...item, quantity: item.quantity - 1 }
-    }));
-
-    setStats((prev) => ({
-      ...prev,
-      health: newHealth,
-      hunger: newHunger,
-      energy: newEnergy,
-      secrecy: newSecrecy
-    }));
-
-    setActivityLogs((prev) => [logMsg, ...prev.slice(0, 8)]);
-  };
-
-  // Buying Items
-  const handleBuyItem = (itemId: string) => {
-    const item = items[itemId];
-    if (!item || stats.money < item.cost) return;
-
-    sounds.playCoin();
-    setStats((prev) => ({ ...prev, money: prev.money - item.cost }));
-    setItems((prev) => ({
-      ...prev,
-      [itemId]: { ...item, quantity: item.quantity + 1 }
-    }));
-    setActivityLogs((prev) => [
-      `Purchased ${item.name} for $${item.cost}.`,
-      ...prev.slice(0, 8)
-    ]);
-  };
-
-  // Restart / Reset Game
-  const handleRestart = () => {
-    sounds.playBite();
-    localStorage.removeItem('vampire_100_stats');
-    localStorage.removeItem('vampire_100_profile');
-    localStorage.removeItem('vampire_100_journal');
-    setStats({
-      health: 100,
-      maxHealth: 100,
-      hunger: 25,
-      secrecy: 85,
-      energy: 70,
-      maxEnergy: 100,
-      money: 120,
-      night: 1
-    });
-    setProfile(DEFAULT_PROFILE);
-    setJournal(DEFAULT_JOURNAL);
-    setUnlockedLocations(['mansion', 'downtown', 'graveyard', 'academy', 'nightclub']);
-    setCharacters(INITIAL_CHARACTERS);
-    setAbilities(INITIAL_ABILITIES);
-    setItems(INITIAL_ITEMS);
-    setActiveEnding(null);
-    setCurrentScreen('character_creation');
-  };
-
-  // Character Creation Completion
-  const handleCharacterCreated = (newProfile: VampireProfile) => {
-    setProfile(newProfile);
-
-    // Apply starting personality perks
-    let startingHp = 100;
-    let startingEnergy = 70;
-    let startingMoney = 120;
-    let startingSecrecy = 85;
-
-    if (newProfile.personality === 'Charming') {
-      startingSecrecy += 10;
-      setCharacters((prev) => {
-        const next = { ...prev };
-        Object.keys(next).forEach((k) => {
-          next[k] = { ...next[k], trust: next[k].trust + 10 };
-        });
-        return next;
-      });
-    } else if (newProfile.personality === 'Mysterious') {
-      startingEnergy += 15;
-      setAbilities((prev) => ({
-        ...prev,
-        night_vision: { ...prev.night_vision, level: 1 }
-      }));
-    } else if (newProfile.personality === 'Ruthless') {
-      startingMoney += 40;
-    } else if (newProfile.personality === 'Compassionate') {
-      startingHp += 20;
-      setCharacters((prev) => ({
-        ...prev,
-        human_friend: { ...prev.human_friend, trust: 85, status: 'Devoted' }
-      }));
-    }
-
-    setStats((prev) => ({
-      ...prev,
-      health: startingHp,
-      maxHealth: startingHp,
-      energy: startingEnergy,
-      maxEnergy: startingEnergy,
-      money: startingMoney,
-      secrecy: Math.min(100, startingSecrecy)
-    }));
-
-    setActivityLogs([
-      `Awakened in Oakhaven as ${newProfile.name}, a ${newProfile.personality} ${newProfile.outfit}.`,
-      'Night 1 begins. Manage your hunger, conceal your identity, and survive 100 nights.'
-    ]);
-
-    setCurrentScreen('dashboard');
-  };
-
-  // Blood Moon Milestone Decision
-  const handleBloodMoonChoice = (outcome: string, effects?: Record<string, number>) => {
-    if (effects) {
-      setStats((prev) => {
-        const next = { ...prev };
-        if (effects.health) next.health = Math.max(0, Math.min(next.maxHealth, next.health + effects.health));
-        if (effects.maxHealth) next.maxHealth += effects.maxHealth;
-        if (effects.hunger) next.hunger = Math.max(0, Math.min(100, next.hunger + effects.hunger));
-        if (effects.secrecy) next.secrecy = Math.max(0, Math.min(100, next.secrecy + effects.secrecy));
-        if (effects.energy) next.energy = Math.max(0, Math.min(next.maxEnergy, next.energy + effects.energy));
-        if (effects.money) next.money = Math.max(0, next.money + effects.money);
-        return next;
-      });
-    }
-
-    setJournal((prev) => ({
-      ...prev,
-      majorDecisions: [`Blood Moon Milestone (Night ${stats.night}): ${outcome}`, ...prev.majorDecisions]
-    }));
-
-    setActivityLogs((prev) => [outcome, ...prev.slice(0, 8)]);
-
-    if (stats.night >= 100) {
-      // Determine final ending
-      const endingKey =
-        profile.personality === 'Compassionate'
-          ? 'redemption'
-          : profile.personality === 'Ruthless'
-          ? 'ruler'
-          : 'eternal';
-      const endings: Record<string, EndingResult> = {
-        ruler: {
-          id: 'monarch',
-          title: 'Vampire Monarch',
-          badge: 'SOVEREIGN OF MIDNIGHT',
-          description: 'You dethroned the decadent elders and claimed the Obsidian Throne of Oakhaven.'
-        },
-        redemption: {
-          id: 'redemption',
-          title: 'Mortal Redemption',
-          badge: 'SUNRISE OF HUMANITY',
-          description: 'You shattered the blood seal and broke the curse. The 101st sunrise warms your mortal skin.'
-        },
-        eternal: {
-          id: 'eternal',
-          title: 'The Wandering Phantom',
-          badge: 'ETERNAL PHANTOM',
-          description: 'You survived the full 100 nights in absolute secrecy, fading into legend as an immortal wanderer.'
-        }
-      };
-      setActiveEnding(endings[endingKey]);
-      setCurrentScreen('ending');
+      setCurrentScreen('night_prep');
     } else {
-      setCurrentScreen('dashboard');
+      // Night over -> advance to next day!
+      const nextNight = stats.night + 1;
+      setStats((prev) => ({
+        ...prev,
+        night: nextNight,
+        timeOfDay: 'day',
+        hunger: Math.min(100, prev.hunger + 20),
+        energy: 100
+      }));
+
+      // Check unlock milestones
+      if (nextNight >= 5) {
+        setPowers((prev) =>
+          prev.map((p) => (p.id === 'bat_form' ? { ...p, unlocked: true } : p))
+        );
+      }
+      if (nextNight >= 15) {
+        setPowers((prev) =>
+          prev.map((p) => (p.id === 'super_speed' ? { ...p, unlocked: true } : p))
+        );
+      }
+
+      if (nextNight >= 100) {
+        setCurrentScreen('ending');
+      } else if (nextNight === 25 || nextNight === 50 || nextNight === 75) {
+        setCurrentScreen('blood_moon');
+      } else {
+        setCurrentScreen('night_summary');
+      }
     }
+  };
+
+  const handleMiniGameReward = (success: boolean, msg: string) => {
+    if (success) {
+      setStats((prev) => ({
+        ...prev,
+        coins: prev.coins + 25,
+        energy: Math.min(100, prev.energy + 15)
+      }));
+      sounds.playAchievement();
+    }
+    setCurrentScreen('home');
+  };
+
+  const handleBuyShopItem = (itemId: string) => {
+    if (itemId === 'tea') {
+      setStats((p) => ({ ...p, coins: p.coins - 15, energy: Math.min(100, p.energy + 35) }));
+    } else if (itemId === 'jelly') {
+      setStats((p) => ({ ...p, coins: p.coins - 20, hunger: Math.max(0, p.hunger - 30) }));
+    } else if (itemId === 'cloak') {
+      setStats((p) => ({ ...p, coins: p.coins - 45, secrecy: Math.min(100, p.secrecy + 25) }));
+    } else if (itemId === 'crystal') {
+      setStats((p) => ({ ...p, coins: p.coins - 35, energy: Math.min(100, p.energy + 20), secrecy: Math.min(100, p.secrecy + 15) }));
+    } else if (itemId === 'box') {
+      setStats((p) => ({ ...p, coins: p.coins - 25 + 35, energy: Math.min(100, p.energy + 20) }));
+    }
+    sounds.playCoin();
+  };
+
+  const handleFeedQuick = () => {
+    sounds.playBite();
+    setStats((p) => ({ ...p, hunger: Math.max(0, p.hunger - 35) }));
+  };
+
+  const handleRestartStory = () => {
+    setStats(DEFAULT_STATS);
+    setProfile(DEFAULT_PROFILE);
+    localStorage.removeItem('vampire_cozy_stats');
+    localStorage.removeItem('vampire_cozy_profile');
+    setCurrentScreen('char_creation');
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0a12] text-[#f4edea] font-serif selection:bg-red-900 selection:text-white relative overflow-x-hidden">
-      {/* Gothic Canvas Atmosphere (Particles, Bats, Crimson Fog) */}
+    <div className="relative min-h-screen bg-[#0e0a1a] text-purple-100 font-sans selection:bg-purple-600 selection:text-white pb-12 overflow-x-hidden">
+      {/* Visual Canvas Fog & Moon */}
       <GothicCanvas night={stats.night} />
 
       {/* Persistent Top Navigation Bar */}
@@ -665,265 +183,191 @@ export function App() {
         stats={stats}
         profile={profile}
         currentScreen={currentScreen}
-        onNavigateScreen={(scr) => {
-          sounds.playClick();
-          setCurrentScreen(scr);
-        }}
+        onNavigate={(s) => setCurrentScreen(s)}
         muted={muted}
-        activeMode={viewMode}
-        onSelectMode={(mode) => {
-          if (mode === 'terminal') {
-            setShowTerminalModal(true);
-          } else {
-            setViewMode(mode);
-          }
-        }}
-        onOpenHowToPlay={() => setShowHowToPlay(true)}
         onToggleMute={() => {
-          const nextMute = !muted;
-          setMuted(nextMute);
-          sounds.setSoundEnabled(!nextMute);
+          setMuted(!muted);
+          sounds.setSoundEnabled(muted);
         }}
-        onOpenInventory={() => setCurrentScreen('abilities')}
-        onOpenAbilities={() => setCurrentScreen('abilities')}
-        onOpenRelationships={() => setCurrentScreen('relationships')}
-        onOpenPythonHub={() => setShowPythonHub(true)}
+        onOpenQuickNavigator={() => setShowScreenModal(true)}
       />
 
-      {/* Main Screen Renderer */}
-      <main className="relative z-10 min-h-[calc(100vh-60px)] pb-12">
-        {/* Alternate Pygame Canvas View Mode */}
-        {viewMode === 'pygame' && (
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <PygameWindowView
-              stats={stats}
-              locations={INITIAL_LOCATIONS}
-              unlockedLocations={unlockedLocations}
-              characters={characters}
-              abilities={abilities}
-              items={items}
-              onSelectLocation={handleSelectLocation}
-              onQuickFeed={handleQuickFeed}
-              onOpenInventory={() => setCurrentScreen('abilities')}
-              onOpenAbilities={() => setCurrentScreen('abilities')}
-              onOpenRelationships={() => setCurrentScreen('relationships')}
-              onOpenPythonHub={() => setShowPythonHub(true)}
-              onOpenTerminal={() => setShowTerminalModal(true)}
-            />
-          </div>
+      {/* Screen Render Router */}
+      <main className="relative z-10">
+        {/* 1. Splash Screen & 2. Main Menu */}
+        {(currentScreen === 'splash' || currentScreen === 'main_menu') && (
+          <SplashAndMenuScreens
+            screenId={currentScreen}
+            onNavigate={(s) => setCurrentScreen(s)}
+            hasSavedGame={stats.night > 1}
+            onNewGame={() => setCurrentScreen('char_creation')}
+            onContinueGame={() => setCurrentScreen('home')}
+            onOpenHowToPlay={() => setCurrentScreen('tutorial')}
+          />
         )}
 
-        {/* 7+ Functional Web Screens */}
-        {viewMode === 'web' && (
-          <>
-            {currentScreen === 'menu' && (
-              <MainMenuScreen
-                hasSavedGame={!!localStorage.getItem('vampire_100_stats')}
-                onNewGame={() => setCurrentScreen('character_creation')}
-                onContinueGame={() => setCurrentScreen('dashboard')}
-                onOpenHowToPlay={() => setShowHowToPlay(true)}
-                onOpenSettings={() => setCurrentScreen('settings')}
-                onOpenTerminal={() => setShowTerminalModal(true)}
-                onOpenPygameWindow={() => setViewMode('pygame')}
-                onOpenPythonHub={() => setShowPythonHub(true)}
-              />
-            )}
+        {/* 3. Character Creation & 4. Character Preview */}
+        {(currentScreen === 'char_creation' || currentScreen === 'char_preview') && (
+          <CharacterScreens
+            initialProfile={profile}
+            isPreviewMode={currentScreen === 'char_preview'}
+            onConfirm={(newProf) => {
+              setProfile(newProf);
+              setCurrentScreen('home');
+            }}
+            onCancel={() => setCurrentScreen('main_menu')}
+          />
+        )}
 
-            {currentScreen === 'character_creation' && (
-              <CharacterCreationScreen
-                initialProfile={profile}
-                onComplete={handleCharacterCreated}
-                onBack={() => setCurrentScreen('menu')}
-              />
-            )}
+        {/* 5. Tutorial Screen */}
+        {currentScreen === 'tutorial' && (
+          <TutorialScreen onStartGame={() => setCurrentScreen('home')} />
+        )}
 
-            {currentScreen === 'dashboard' && (
-              <DashboardScreen
-                stats={stats}
-                profile={profile}
-                journal={journal}
-                latestLog={activityLogs[0]}
-                dawnReport={dawnReport}
-                onNavigate={(scr) => setCurrentScreen(scr as AppScreen)}
-                onQuickFeed={handleQuickFeed}
-                onEndNight={() => advanceNight(`Rested through the daytime slumber. Awakened for Night ${stats.night + 1}.`)}
-                onJumpNight={(n) => {
-                  setStats((prev) => ({ ...prev, night: n }));
-                  setDawnReport(`Fast-forwarded to Night ${n}.`);
-                  if ([25, 50, 75, 100].includes(n)) {
-                    setCurrentScreen('blood_moon');
-                  }
-                }}
-              />
-            )}
+        {/* 6. Home Screen */}
+        {currentScreen === 'home' && (
+          <HomeScreen
+            stats={stats}
+            profile={profile}
+            onNavigate={(s) => setCurrentScreen(s)}
+            onSleep={handleSleepOrNextPhase}
+            onOpenMysteryBox={() => {
+              setStats((p) => ({ ...p, coins: p.coins + 30, energy: Math.min(100, p.energy + 20) }));
+              setMysteryBoxClaimedNight(stats.night);
+              setCurrentScreen('daily_reward');
+            }}
+            mysteryBoxAvailable={mysteryBoxClaimedNight !== stats.night}
+          />
+        )}
 
-            {currentScreen === 'map' && (
-              <CityMapScreen
-                locations={INITIAL_LOCATIONS}
-                unlockedLocations={unlockedLocations}
-                characters={characters}
-                night={stats.night}
-                onSelectLocation={handleSelectLocation}
-                onBack={() => setCurrentScreen('dashboard')}
-              />
-            )}
+        {/* 7-12: Daytime Exploration Screens */}
+        {(currentScreen === 'day_map' ||
+          currentScreen === 'school' ||
+          currentScreen === 'town' ||
+          currentScreen === 'forest' ||
+          currentScreen === 'shop' ||
+          currentScreen === 'witch_house') && (
+          <DaytimeExplorationScreens
+            screenId={currentScreen}
+            onNavigate={(s) => setCurrentScreen(s)}
+            onTalkToFriend={(fId) => {
+              setActiveFriendId(fId);
+              setFriends((prev) => ({
+                ...prev,
+                [fId]: { ...prev[fId], friendship: Math.min(100, prev[fId].friendship + 10) }
+              }));
+            }}
+            onBuyItem={handleBuyShopItem}
+            coins={stats.coins}
+          />
+        )}
 
-            {currentScreen === 'hunting' && (
-              <HuntCombatScreen
-                stats={stats}
-                profile={profile}
-                abilities={abilities}
-                onCombatEnd={(victory, summary, rewards) => {
-                  if (rewards) {
-                    setStats((prev) => ({
-                      ...prev,
-                      money: prev.money + rewards.money,
-                      hunger: Math.max(0, prev.hunger + rewards.hunger)
-                    }));
-                  }
-                  setActivityLogs((prev) => [summary, ...prev.slice(0, 8)]);
-                  setCurrentScreen('dashboard');
-                }}
-                onBack={() => setCurrentScreen('dashboard')}
-              />
-            )}
+        {/* 13-17: Relationships, Powers, Inventory & Dialogue */}
+        {(currentScreen === 'friendship' ||
+          currentScreen === 'dialogue' ||
+          currentScreen === 'choice' ||
+          currentScreen === 'inventory' ||
+          currentScreen === 'powers') && (
+          <FriendshipAndPowersScreens
+            screenId={currentScreen}
+            onNavigate={(s) => setCurrentScreen(s)}
+            friends={friends}
+            powers={powers}
+            currentFriendId={activeFriendId}
+            onSelectFriend={(fId) => setActiveFriendId(fId)}
+            onChoiceMade={(text, impact) => {
+              if (impact.includes('Friendship')) {
+                setFriends((p) => ({
+                  ...p,
+                  [activeFriendId]: { ...p[activeFriendId], friendship: Math.min(100, p[activeFriendId].friendship + 10) }
+                }));
+              } else if (impact.includes('Secrecy')) {
+                setStats((p) => ({ ...p, secrecy: Math.min(100, p.secrecy + 10) }));
+              }
+            }}
+            onUnlockPower={(pId) => {
+              if (stats.coins >= 100) {
+                setStats((p) => ({ ...p, coins: p.coins - 100 }));
+                setPowers((p) => p.map((item) => (item.id === pId ? { ...item, unlocked: true } : item)));
+                sounds.playAchievement();
+              } else {
+                alert('You need 100 Coins to unlock early!');
+              }
+            }}
+            energy={stats.energy}
+          />
+        )}
 
-            {currentScreen === 'abilities' && (
-              <AbilitiesInventoryScreen
-                abilities={abilities}
-                items={items}
-                money={stats.money}
-                onUpgradeAbility={handleUpgradeAbility}
-                onUseItem={handleUseItem}
-                onBuyItem={handleBuyItem}
-                onBack={() => setCurrentScreen('dashboard')}
-              />
-            )}
+        {/* 18-21 & 23: Night Survival & Encounters */}
+        {(currentScreen === 'night_prep' ||
+          currentScreen === 'night_map' ||
+          currentScreen === 'random_event' ||
+          currentScreen === 'enemy_encounter' ||
+          currentScreen === 'blood_moon') && (
+          <NightSurvivalScreens
+            screenId={currentScreen}
+            onNavigate={(s) => setCurrentScreen(s)}
+            stats={stats}
+            profile={profile}
+            onFeed={handleFeedQuick}
+            onChoice={(c) => {
+              setClues((prev) => [
+                ...prev,
+                {
+                  id: `clue_${Date.now()}`,
+                  title: 'Letter from Midnight Cat',
+                  icon: '📜',
+                  description: 'A message whispering that your vampire family is watching over you.',
+                  discoveredAtNight: stats.night
+                }
+              ]);
+            }}
+          />
+        )}
 
-            {currentScreen === 'relationships' && (
-              <RelationshipsStoryScreen
-                characters={characters}
-                journal={journal}
-                night={stats.night}
-                onBack={() => setCurrentScreen('dashboard')}
-              />
-            )}
+        {/* 22: Mini-Game Arena */}
+        {currentScreen === 'minigame' && (
+          <MiniGamesScreen
+            onFinishGame={handleMiniGameReward}
+            onExit={() => setCurrentScreen(stats.timeOfDay === 'night' ? 'night_map' : 'day_map')}
+          />
+        )}
 
-            {currentScreen === 'blood_moon' && (
-              <BloodMoonCinematicScreen
-                night={stats.night}
-                onChoiceMade={handleBloodMoonChoice}
-                onContinue={() => setCurrentScreen('dashboard')}
-              />
-            )}
-
-            {currentScreen === 'settings' && (
-              <SettingsScreen
-                onBack={() => setCurrentScreen('dashboard')}
-                onResetGame={handleRestart}
-                onReturnToMainMenu={() => setCurrentScreen('menu')}
-                onOpenTerminal={() => setShowTerminalModal(true)}
-                onOpenPygameWindow={() => setViewMode('pygame')}
-                onOpenPythonHub={() => setShowPythonHub(true)}
-              />
-            )}
-          </>
+        {/* 24-30: Mystery, Daily Reward, Summary, Achievements, Progress, Ending, Replay */}
+        {(currentScreen === 'mystery' ||
+          currentScreen === 'daily_reward' ||
+          currentScreen === 'night_summary' ||
+          currentScreen === 'achievements' ||
+          currentScreen === 'game_progress' ||
+          currentScreen === 'ending' ||
+          currentScreen === 'replay') && (
+          <RewardsAndEndingsScreens
+            screenId={currentScreen}
+            onNavigate={(s) => setCurrentScreen(s)}
+            stats={stats}
+            profile={profile}
+            clues={clues}
+            achievements={achievements}
+            memories={memories}
+            onClaimDaily={() => {
+              setStats((p) => ({ ...p, coins: p.coins + 30, energy: Math.min(100, p.energy + 20) }));
+            }}
+            onRestartStory={handleRestartStory}
+            onAdvanceNight={() => {
+              // Awaken to new day
+            }}
+          />
         )}
       </main>
 
-      {/* Modals: Location Events */}
-      {activeEvent && (
-        <EventModal
-          event={activeEvent}
-          characters={characters}
-          abilities={abilities}
-          items={items}
-          money={stats.money}
-          energy={stats.energy}
-          onChoose={handleEventChoice}
-        />
-      )}
-
-      {/* Modals: Combat Ambush Encounter */}
-      {activeCombatEnemy && (
-        <CombatModal
-          enemy={activeCombatEnemy}
-          stats={stats}
-          abilities={abilities}
-          items={items}
-          onFinishCombat={(result) => {
-            setActiveCombatEnemy(null);
-            setStats(result.newStats);
-            setActivityLogs((prev) => [result.log, ...prev.slice(0, 8)]);
-            if (!result.won && !result.escaped) {
-              sounds.playGameOver();
-              setActiveEnding({
-                id: 'defeated',
-                title: 'Slain in Ambush',
-                badge: 'FALLEN IN COMBAT',
-                description: `You were overwhelmed by ${activeCombatEnemy.name} and your mortal body turned to ash.`
-              });
-              setCurrentScreen('ending');
-            }
-          }}
-        />
-      )}
-
-      {/* Modals: How To Play Manual */}
-      {showHowToPlay && (
-        <HowToPlayModal
-          onClose={() => setShowHowToPlay(false)}
-          onSelectMode={(mode) => {
-            if (mode === 'terminal') {
-              setShowTerminalModal(true);
-            } else {
-              setViewMode(mode);
-            }
-          }}
-          onOpenPythonHub={() => {
-            setShowHowToPlay(false);
-            setShowPythonHub(true);
-          }}
-        />
-      )}
-
-      {/* Modals: Python Source Code Hub */}
-      {showPythonHub && (
-        <PythonHubModal onClose={() => setShowPythonHub(false)} />
-      )}
-
-      {/* Modals: In-Browser Python CLI Console */}
-      {showTerminalModal && (
-        <PythonTerminalModal
-          stats={stats}
-          characters={characters}
-          abilities={abilities}
-          items={items}
-          onClose={() => setShowTerminalModal(false)}
-          onFeed={handleQuickFeed}
-          onSelectLocation={handleSelectLocation}
-          onUseItem={handleUseItem}
-          onUpgradeAbility={handleUpgradeAbility}
-          onAdvanceNight={advanceNight}
-        />
-      )}
-
-      {/* Modals: Ending / Game Over */}
-      {(activeEnding || currentScreen === 'ending') && (
-        <EndingModal
-          ending={
-            activeEnding || {
-              id: 'defeated',
-              title: 'Slain in the Shadows',
-              badge: 'EXTINGUISHED SOUL',
-              description: 'Your vampire journey has reached its conclusion.'
-            }
-          }
-          night={stats.night}
-          onRestart={handleRestart}
+      {/* 30 Screens Quick Navigator Modal */}
+      {showScreenModal && (
+        <AllScreensModal
+          currentScreen={currentScreen}
+          onSelectScreen={(s) => setCurrentScreen(s)}
+          onClose={() => setShowScreenModal(false)}
         />
       )}
     </div>
   );
 }
-export default App;
